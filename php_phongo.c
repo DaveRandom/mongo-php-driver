@@ -1381,10 +1381,8 @@ void php_phongo_cursor_to_zval(zval *retval, const mongoc_cursor_t *cursor) /* {
 		_ADD_BOOL(retval, is_command);
 		_ADD_BOOL(retval, sent);
 		_ADD_BOOL(retval, done);
-		_ADD_BOOL(retval, failed);
 		_ADD_BOOL(retval, end_of_event);
 		_ADD_BOOL(retval, in_exhaust);
-		_ADD_BOOL(retval, redir_primary);
 		_ADD_BOOL(retval, has_fields);
 #undef _ADD_BOOL
 
