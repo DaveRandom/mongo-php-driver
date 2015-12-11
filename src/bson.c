@@ -1050,6 +1050,7 @@ static bool is_public_property(zend_class_entry *ce, const char *prop_name, int 
 #if PHP_VERSION_ID >= 70000
 	ZVAL_STRINGL(&member, prop_name, prop_name_len);
 	property_info = zend_get_property_info(ce, Z_STR(member), 1 TSRMLS_CC);
+	zval_ptr_dtor(&member);
 #else
 	ZVAL_STRINGL(&member, prop_name, prop_name_len, 0);
 	property_info = zend_get_property_info(ce, &member, 1 TSRMLS_CC);
