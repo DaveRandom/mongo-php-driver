@@ -1203,6 +1203,8 @@ PHONGO_API void zval_to_bson(zval *data, php_phongo_bson_flags_t flags, bson_t *
 				phongo_bson_append(bson, flags & ~PHONGO_BSON_ADD_ID, skey, skey_len, Z_TYPE_P(value), value TSRMLS_CC);
 			}
 		} ZEND_HASH_FOREACH_END();
+
+		zval_ptr_dtor(&obj_data);
 	}
 #else
 	zend_hash_internal_pointer_reset_ex(ht_data, &pos);
