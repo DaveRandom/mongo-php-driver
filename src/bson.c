@@ -968,7 +968,11 @@ void object_to_bson(zval *object, php_phongo_bson_flags_t flags, const char *key
 			return;
 		}
 
+#if PHP_VERSION_ID >= 70000
+		phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "Unexpected %s instance: %s", ZSTR_VAL(php_phongo_type_ce->name), ZSTR_VAL(Z_OBJCE_P(object)->name));
+#else
 		phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "Unexpected %s instance: %s", php_phongo_type_ce->name, Z_OBJCE_P(object)->name);
+#endif
 		return;
 	}
 
@@ -1037,8 +1041,14 @@ void phongo_bson_append(bson_t *bson, php_phongo_bson_flags_t flags, const char 
 			object_to_bson(entry, flags, key, key_len, bson TSRMLS_CC);
 			break;
 
+#if PHP_VERSION_ID >= 70000
+		case IS_INDIRECT:
+			phongo_bson_append(bson, flags, key, key_len, Z_TYPE_P(Z_INDIRECT_P(entry)), Z_INDIRECT_P(entry) TSRMLS_DC);
+			break;
+#endif
+
 		default:
-			phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "Got unsupported type '%s'", zend_get_type_by_const(entry_type));
+			phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "Got unsupported type %d '%s'", entry_type, zend_get_type_by_const(entry_type));
 	}
 }
 
@@ -1051,7 +1061,7 @@ static bool is_public_property(zend_class_entry *ce, const char *prop_name, int 
 	ZVAL_STRINGL(&member, prop_name, prop_name_len);
 	property_info = zend_get_property_info(ce, Z_STR(member), 1 TSRMLS_CC);
 	zval_ptr_dtor(&member);
-	if (!property_info || property_info == ZEND_WRONG_PROPERTY_INFO || property_info->flags & ZEND_ACC_PUBLIC) {
+	if (!property_info || (property_info != ZEND_WRONG_PROPERTY_INFO && property_info->flags & ZEND_ACC_PUBLIC)) {
 		return true;
 	}
 	return false;
@@ -1141,7 +1151,11 @@ PHONGO_API void zval_to_bson(zval *data, php_phongo_bson_flags_t flags, bson_t *
 			}
 
 			if (instanceof_function(Z_OBJCE_P(data), php_phongo_type_ce TSRMLS_CC)) {
+#if PHP_VERSION_ID >= 70000
+				phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "%s instance %s cannot be serialized as a root element", ZSTR_VAL(php_phongo_type_ce->name), ZSTR_VAL(Z_OBJCE_P(data)->name));
+#else
 				phongo_throw_exception(PHONGO_ERROR_UNEXPECTED_VALUE TSRMLS_CC, "%s instance %s cannot be serialized as a root element", php_phongo_type_ce->name, Z_OBJCE_P(data)->name);
+#endif
 
 				break;
 			}
@@ -1268,8 +1282,12 @@ PHONGO_API void zval_to_bson(zval *data, php_phongo_bson_flags_t flags, bson_t *
 		}
 	}
 	if (!Z_ISUNDEF(obj_data)) {
-#if PHP_VERSION_ID < 70000
-		zval_ptr_dtor(&obj_data);
+#if PHP_VERSION_ID >= 70000
+		if (Z_TYPE_P(data) == IS_OBJECT && instanceof_function(Z_OBJCE_P(data), php_phongo_serializable_ce TSRMLS_CC)) {
+#endif
+			zval_ptr_dtor(&obj_data);
+#if PHP_VERSION_ID >= 70000
+		}
 #endif
 	}
 }
