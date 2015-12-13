@@ -1304,7 +1304,7 @@ int bson_to_zval(const unsigned char *data, int data_len, zval **zv)
 
 	retval = bson_to_zval_ex(data, data_len, &state);
 #if PHP_VERSION_ID >= 70000
-	ZVAL_COPY(zv, &state.zchild);
+	ZVAL_ZVAL(zv, &state.zchild, 1, 1);
 #else
 	*zv = state.zchild;
 #endif
