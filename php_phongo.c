@@ -1542,6 +1542,7 @@ void php_phongo_populate_default_ssl_ctx(php_stream_context *ctx, zval *driverOp
 				str_efree(ctmp); \
 			} \
 			php_stream_context_set_option(ctx, "ssl", name, &ztmp); \
+			zval_ptr_dtor(&ztmp); \
 		}
 #define SET_BOOL_CTX(name, defaultvalue) \
 		{ \
