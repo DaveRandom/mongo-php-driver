@@ -1052,20 +1052,40 @@ void phongo_bson_append(bson_t *bson, php_phongo_bson_flags_t flags, const char 
 	}
 }
 
+#if PHP_VERSION_ID >= 70000
+static bool is_public_property(zend_class_entry *ce, zend_string *name TSRMLS_DC) /* {{{ */
+#else
 static bool is_public_property(zend_class_entry *ce, const char *prop_name, int prop_name_len TSRMLS_DC) /* {{{ */
+#endif
 {
 	zend_property_info *property_info;
-	zval member;
 
 #if PHP_VERSION_ID >= 70000
-	ZVAL_STRINGL(&member, prop_name, prop_name_len);
-	property_info = zend_get_property_info(ce, Z_STR(member), 1 TSRMLS_CC);
-	zval_ptr_dtor(&member);
-	if (!property_info || (property_info != ZEND_WRONG_PROPERTY_INFO && property_info->flags & ZEND_ACC_PUBLIC)) {
+	zend_string *member;
+
+	if (ZSTR_VAL(name)[0] == 0) {
+		const char *prop_name,
+			 *class_name;
+		size_t prop_name_len;
+
+		zend_unmangle_property_name_ex(name,
+			&class_name, &prop_name, &prop_name_len);
+		member = zend_string_init(prop_name, prop_name_len, 0);
+	} else member = zend_string_copy(name);
+	property_info = zend_get_property_info(ce, member, 1 TSRMLS_CC);
+	zend_string_release(member);
+
+	if (!property_info) /* undefined property */
 		return true;
-	}
-	return false;
+
+	/* this appears to behave wrong ?? */
+
+	if (property_info == ZEND_WRONG_PROPERTY_INFO)
+		return true;
+
+	return (property_info->flags & ZEND_ACC_PPP_MASK) == ZEND_ACC_PUBLIC;
 #else
+	zval member;
 	ZVAL_STRINGL(&member, prop_name, prop_name_len, 0);
 	property_info = zend_get_property_info(ce, &member, 1 TSRMLS_CC);
 	return (property_info && (property_info->flags & ZEND_ACC_PUBLIC));
@@ -1191,12 +1211,13 @@ PHONGO_API void zval_to_bson(zval *data, php_phongo_bson_flags_t flags, bson_t *
 					const char *skey;
 					size_t skey_len = 0;
 					const char *class_name;
-					zend_unmangle_property_name_ex(key, &class_name, &skey, &skey_len);
 
 					/* Ignore non-public properties */
-					if (!is_public_property(Z_OBJCE_P(data), skey, skey_len TSRMLS_CC)) {
+					if (!is_public_property(Z_OBJCE_P(data), key TSRMLS_CC)) {
 						continue;
 					}
+
+					zend_unmangle_property_name_ex(key, &class_name, &skey, &skey_len);
 
 					if (flags & PHONGO_BSON_ADD_ID) {
 						if (!strncmp(skey, "_id", sizeof("_id")-1)) {
