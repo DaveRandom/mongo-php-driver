@@ -1058,7 +1058,7 @@ static bool is_public_property(zend_class_entry *ce, zend_string *name, zend_str
 static bool is_public_property(zend_class_entry *ce, const char *prop_name, int prop_name_len TSRMLS_DC) /* {{{ */
 #endif
 {
-	zend_property_info *property_info;
+	zend_property_info *property_info = NULL;
 
 #if PHP_VERSION_ID >= 70000
 	if (ZSTR_VAL(name)[0] == 0) {
@@ -1075,12 +1075,11 @@ static bool is_public_property(zend_class_entry *ce, const char *prop_name, int 
 	if (!property_info) /* undefined property */
 		return true;
 
-	/* this appears to behave wrong ?? */
-
-	if (property_info == ZEND_WRONG_PROPERTY_INFO)
-		return true;
-
-	return (property_info->flags & ZEND_ACC_PPP_MASK) == ZEND_ACC_PUBLIC;
+	if (property_info == ZEND_WRONG_PROPERTY_INFO) {
+		return false;
+	}
+	
+	return (property_info->flags & ZEND_ACC_PUBLIC);
 #else
 	zval member;
 	ZVAL_STRINGL(&member, prop_name, prop_name_len, 0);
@@ -1205,22 +1204,29 @@ PHONGO_API void zval_to_bson(zval *data, php_phongo_bson_flags_t flags, bson_t *
 		ZEND_HASH_FOREACH_KEY_VAL(ht_data, num_key, key, value) {
 			if (key) {
 				if (Z_TYPE_P(data) == IS_OBJECT) {
-					zend_string *member;
+					zend_string *member = NULL;
 					
 					/* Ignore non-public properties */
-					if (!is_public_property(Z_OBJCE_P(data), key, &member TSRMLS_CC)) {
-						zend_string_release(member);						
+					if (!instanceof_function(Z_OBJCE_P(data), php_phongo_serializable_ce) &&
+						!is_public_property(Z_OBJCE_P(data), key, &member TSRMLS_CC)) {
+						if (member)
+							zend_string_release(member);						
 						continue;
 					}
 
 					if (flags & PHONGO_BSON_ADD_ID) {
-						if (!strncmp(ZSTR_VAL(member), "_id", sizeof("_id")-1)) {
+						if (!strncmp(member ? ZSTR_VAL(member) : ZSTR_VAL(key), "_id", sizeof("_id")-1)) {
 							flags &= ~PHONGO_BSON_ADD_ID;
 						}
 					}
 
-					phongo_bson_append(bson, flags & ~PHONGO_BSON_ADD_ID, ZSTR_VAL(member), ZSTR_LEN(member), Z_TYPE_P(value), value TSRMLS_CC);
-					zend_string_release(member);
+					phongo_bson_append(bson, flags & ~PHONGO_BSON_ADD_ID, 
+						member ? ZSTR_VAL(member) : ZSTR_VAL(key), 
+						member ? ZSTR_LEN(member) : ZSTR_LEN(key), 
+						Z_TYPE_P(value), value TSRMLS_CC);
+
+					if (member)
+						zend_string_release(member);
 				} else {
 					if (flags & PHONGO_BSON_ADD_ID) {
 						if (!strncmp(ZSTR_VAL(key), "_id", sizeof("_id")-1)) {
