@@ -931,6 +931,12 @@ bool phongo_stream_socket_check_closed(mongoc_stream_t *stream) /* {{{ */
 {
 	php_phongo_stream_socket *base_stream = (php_phongo_stream_socket *)stream;
 	PHONGO_TSRMLS_FETCH_FROM_CTX(base_stream->tsrm_ls);
+<<<<<<< HEAD
+=======
+
+	return PHP_STREAM_OPTION_RETURN_OK == php_stream_set_option(base_stream->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL);
+} /* }}} */
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 
 	return PHP_STREAM_OPTION_RETURN_OK != php_stream_set_option(base_stream->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL);
 } /* }}} */
@@ -1374,15 +1380,25 @@ void php_phongo_cursor_to_zval(zval *retval, const mongoc_cursor_t *cursor) /* {
 
 	array_init_size(retval, 19);
 
+<<<<<<< HEAD
 	if (cursor) {
+=======
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 		ADD_ASSOC_LONG_EX(retval, "stamp", cursor->stamp);
 
 #define _ADD_BOOL(z, field) ADD_ASSOC_BOOL_EX(z, #field, cursor->field)
 		_ADD_BOOL(retval, is_command);
 		_ADD_BOOL(retval, sent);
 		_ADD_BOOL(retval, done);
+<<<<<<< HEAD
 		_ADD_BOOL(retval, end_of_event);
 		_ADD_BOOL(retval, in_exhaust);
+=======
+		_ADD_BOOL(retval, failed);
+		_ADD_BOOL(retval, end_of_event);
+		_ADD_BOOL(retval, in_exhaust);
+		_ADD_BOOL(retval, redir_primary);
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 		_ADD_BOOL(retval, has_fields);
 #undef _ADD_BOOL
 
@@ -1455,7 +1471,11 @@ void php_phongo_cursor_to_zval(zval *retval, const mongoc_cursor_t *cursor) /* {
 			ADD_ASSOC_ZVAL_EX(retval, "current_doc", zv);
 #endif
 		}
+<<<<<<< HEAD
 	}
+=======
+
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 } /* }}} */
 
 
@@ -1542,7 +1562,10 @@ void php_phongo_populate_default_ssl_ctx(php_stream_context *ctx, zval *driverOp
 				str_efree(ctmp); \
 			} \
 			php_stream_context_set_option(ctx, "ssl", name, &ztmp); \
+<<<<<<< HEAD
 			zval_ptr_dtor(&ztmp); \
+=======
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 		}
 #define SET_BOOL_CTX(name, defaultvalue) \
 		{ \
@@ -1883,8 +1906,12 @@ static mongoc_client_t *php_phongo_make_mongo_client(const mongoc_uri_t *uri, zv
 			char filename[MAXPATHLEN];
 
 #if PHP_VERSION_ID >= 70000
+<<<<<<< HEAD
 			zend_string *s = zval_get_string(pem);
 			if (VCWD_REALPATH(ZSTR_VAL(s), filename)) {
+=======
+			if (VCWD_REALPATH(zval_get_string(pem)->val, filename)) {
+>>>>>>> 8a81e34363ed37bed85a4503cafb6e00d76a4fa4
 #else
 			convert_to_string_ex(pem);
 			if (VCWD_REALPATH(Z_STRVAL_PP(pem), filename)) {
